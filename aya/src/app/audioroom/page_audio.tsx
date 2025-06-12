@@ -19,6 +19,8 @@ import {
   TrackMutedIndicator,
   TrackToggle,
   ParticipantAudioTile,
+  BarVisualizer,
+  ConnectionQualityIndicator,
 } from '@livekit/components-react';
 import { Room, Track, RemoteTrackPublication } from 'livekit-client';
 import '@livekit/components-styles';
@@ -26,9 +28,7 @@ import { useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import React from 'react';
-
-
-
+import { MicIcon, MicDisabledIcon } from '@livekit/components-react';
 
 const serverUrl = process.env.NEXT_PUBLIC_LIVEKIT_URL;
 
@@ -87,11 +87,19 @@ export default function App() {
     </RoomContext.Provider>
   );
 
-
+  // Custom mute indicator that uses isMuted state directly
+  function CustomMuteIndicator({ isMuted }: { isMuted: boolean }) {
+    return (
+      <div className="lk-participant-metadata-item" data-lk-muted={isMuted}>
+        {isMuted ? <MicDisabledIcon /> : <MicIcon />}
+      </div>
+    );
+  }
 
   function AyaParticipantTile({ trackRef, children }: { trackRef: TrackReferenceOrPlaceholder, children?: React.ReactNode }) {
     const participant = trackRef.participant;
     console.log("AyaParticipantTile: ", participant);
+    const [isMuted, setIsMuted] = React.useState(false);
 
     // Create a track reference specifically for the microphone
     const audioTrackRef = {
@@ -105,17 +113,20 @@ export default function App() {
         trackRef={audioTrackRef}
         onParticipantClick={() => {
           console.log("Participant clicked: ", participant);
-          const audioPublication = participant.getTrackPublication(Track.Source.Microphone);
-          if (audioPublication && audioPublication instanceof RemoteTrackPublication) {
-            console.log("Audio Publication Mute state: ", audioPublication.track.isMuted);
-          {/*  audioPublication.setEnabled(!audioPublication.isEnabled); */}
-            audioPublication.setSubscribed(!audioPublication.isSubscribed);
-            audioPublication.track.setMuted(!audioPublication.track.isMuted);
-            console.log("Audio Publication Mute state: ", audioPublication.track.isMuted);
-          }
+          setIsMuted(!isMuted);
         }}
         className="lk-participant-tile"
-      />
+      >
+        <AudioTrack trackRef={audioTrackRef} muted={isMuted} />
+        <BarVisualizer barCount={7} options={{ minHeight: 8 }} />
+        <div className="lk-participant-metadata">
+          <div className="lk-participant-metadata-item">
+            <CustomMuteIndicator isMuted={isMuted} />
+            <ParticipantName />
+          </div>
+          <ConnectionQualityIndicator className="lk-participant-metadata-item" />
+        </div>
+      </ParticipantAudioTile>
     );
   }
 
@@ -145,5 +156,5 @@ export default function App() {
       </div>
     );
   }
- }
+}
 
