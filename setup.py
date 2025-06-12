@@ -3,6 +3,7 @@ import os
 import platform
 import subprocess
 import sys
+import urllib.request
 
 def run_command(command):
     try:
@@ -12,6 +13,30 @@ def run_command(command):
         print(f"Error executing command: {command}")
         print(f"Error: {e}")
         return False
+
+def install_pip():
+    print("Checking for pip...")
+    try:
+        subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
+        print("pip is already installed.")
+        return True
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        print("pip not found. Installing pip...")
+        try:
+            # Download get-pip.py
+            urllib.request.urlretrieve(
+                "https://bootstrap.pypa.io/get-pip.py",
+                "get-pip.py"
+            )
+            # Install pip
+            subprocess.run([sys.executable, "get-pip.py"], check=True)
+            # Clean up
+            os.remove("get-pip.py")
+            print("pip installed successfully.")
+            return True
+        except Exception as e:
+            print(f"Failed to install pip: {e}")
+            return False
 
 def install_dependencies():
     system = platform.system().lower()
@@ -25,16 +50,21 @@ def install_dependencies():
                 run_command('/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"')
             run_command("brew install node")
         elif system == "linux":
-            if "ubuntu" in platform.platform().lower():
-                run_command("curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -")
-                run_command("sudo apt-get install -y nodejs")
-            else:
-                print("Unsupported Linux distribution. Please install Node.js manually.")
-                return False
+    
+            run_command("curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -")
+            run_command("sudo apt-get install -y nodejs")
+        else:
+            print("Unsupported Linux distribution. Please install Node.js manually.")
+            return False
     
     # Check if npm is installed
     if not run_command("npm --version"):
         print("npm is not installed. Please install Node.js which includes npm.")
+        return False
+
+    # Check and install pip if needed
+    if not install_pip():
+        print("Failed to install pip. Please install pip manually.")
         return False
 
     # Install Python dependencies
