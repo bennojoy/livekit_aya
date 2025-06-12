@@ -28,7 +28,7 @@ def setup_virtual_env():
     if system == "linux" and is_ubuntu():
         # First install required system packages
         print("Installing required system packages...")
-        if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full"):
+        if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full python3-pip"):
             print("Failed to install required system packages.")
             return False
         
@@ -39,6 +39,13 @@ def setup_virtual_env():
             if not run_command(f"python3 -m venv {venv_path}"):
                 print("Failed to create virtual environment.")
                 return False
+        
+        # Upgrade pip and ensure we're using the latest package index
+        venv_pip = os.path.join(venv_path, "bin", "pip")
+        print("Upgrading pip and updating package index...")
+        if not run_command(f"{venv_pip} install --upgrade pip"):
+            print("Failed to upgrade pip.")
+            return False
         
         return True
     else:
@@ -75,8 +82,18 @@ def install_dependencies():
     if system == "linux" and is_ubuntu():
         # Use the virtual environment's pip
         venv_pip = os.path.join("venv", "bin", "pip")
+        # First try to install livekit-server-sdk-python separately
+        print("Installing livekit-server-sdk-python...")
+        if not run_command(f"{venv_pip} install livekit-server-sdk-python"):
+            print("Failed to install livekit-server-sdk-python. Trying alternative installation method...")
+            if not run_command(f"{venv_pip} install --index-url https://pypi.org/simple/ livekit-server-sdk-python"):
+                print("Error installing livekit-server-sdk-python.")
+                return False
+        
+        # Then install the rest of the requirements
+        print("Installing remaining Python dependencies...")
         if not run_command(f"{venv_pip} install -r requirements.txt"):
-            print("Error installing Python dependencies.")
+            print("Error installing remaining Python dependencies.")
             return False
     else:
         if not run_command("pip install -r requirements.txt"):
