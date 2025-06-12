@@ -4,6 +4,14 @@ import platform
 import subprocess
 import sys
 
+def is_ubuntu():
+    try:
+        with open('/etc/os-release', 'r') as f:
+            content = f.read().lower()
+            return 'ubuntu' in content
+    except:
+        return False
+
 def run_command(command):
     try:
         subprocess.run(command, shell=True, check=True)
@@ -17,7 +25,7 @@ def setup_virtual_env():
     print("Setting up virtual environment...")
     system = platform.system().lower()
     
-    if system == "linux" and "ubuntu" in platform.platform().lower():
+    if system == "linux" and is_ubuntu():
         # First install required system packages
         print("Installing required system packages...")
         if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full"):
@@ -64,7 +72,7 @@ def install_dependencies():
 
     # Install Python dependencies
     print("Installing Python dependencies...")
-    if system == "linux" and "ubuntu" in platform.platform().lower():
+    if system == "linux" and is_ubuntu():
         # Use the virtual environment's pip
         venv_pip = os.path.join("venv", "bin", "pip")
         if not run_command(f"{venv_pip} install -r requirements.txt"):
@@ -103,7 +111,7 @@ def main():
         print("\nSetup completed successfully!")
         print("\nTo start the application:")
         print("1. Start the LiveKit server")
-        if platform.system().lower() == "linux" and "ubuntu" in platform.platform().lower():
+        if platform.system().lower() == "linux" and is_ubuntu():
             print("2. Run 'source venv/bin/activate && python livekit_agent_english.py' in one terminal")
         else:
             print("2. Run 'python livekit_agent_english.py' in one terminal")
