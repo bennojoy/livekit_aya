@@ -14,29 +14,50 @@ def run_command(command):
         print(f"Error: {e}")
         return False
 
-def install_pip():
-    print("Checking for pip...")
-    try:
-        subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
-        print("pip is already installed.")
-        return True
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        print("pip not found. Installing pip...")
-        try:
-            # Download get-pip.py
-            urllib.request.urlretrieve(
-                "https://bootstrap.pypa.io/get-pip.py",
-                "get-pip.py"
-            )
-            # Install pip
-            subprocess.run([sys.executable, "get-pip.py"], check=True)
-            # Clean up
-            os.remove("get-pip.py")
-            print("pip installed successfully.")
-            return True
-        except Exception as e:
-            print(f"Failed to install pip: {e}")
+def setup_virtual_env():
+    print("Setting up virtual environment...")
+    system = platform.system().lower()
+    
+    if system == "linux" and "ubuntu" in platform.platform().lower():
+        # Install python3-venv if not present
+        if not run_command("python3 -m venv --help"):
+            print("Installing python3-venv...")
+            run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full")
+        
+        # Create virtual environment
+        venv_path = "venv"
+        if not os.path.exists(venv_path):
+            if not run_command(f"python3 -m venv {venv_path}"):
+                print("Failed to create virtual environment.")
+                return False
+        
+        # Activate virtual environment and install pip
+        activate_script = os.path.join(venv_path, "bin", "activate")
+        if not run_command(f"source {activate_script} && pip install --upgrade pip"):
+            print("Failed to install pip in virtual environment.")
             return False
+        
+        return True
+    else:
+        # For non-Ubuntu systems, try to install pip directly
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
+            print("pip is already installed.")
+            return True
+        except (subprocess.CalledProcessError, FileNotFoundError):
+            print("pip not found. Installing pip...")
+            try:
+                urllib.request.urlretrieve(
+                    "https://bootstrap.pypa.io/get-pip.py",
+                    "get-pip.py"
+                )
+                subprocess.run([sys.executable, "get-pip.py"], check=True)
+                os.remove("get-pip.py")
+                print("pip installed successfully.")
+                return True
+            except Exception as e:
+                print(f"Failed to install pip: {e}")
+                return False
 
 def install_dependencies():
     system = platform.system().lower()
@@ -50,28 +71,29 @@ def install_dependencies():
                 run_command('/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"')
             run_command("brew install node")
         elif system == "linux":
-    
             run_command("curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -")
             run_command("sudo apt-get install -y nodejs")
-        else:
-            print("Unsupported Linux distribution. Please install Node.js manually.")
-            return False
     
     # Check if npm is installed
     if not run_command("npm --version"):
         print("npm is not installed. Please install Node.js which includes npm.")
         return False
 
-    # Check and install pip if needed
-    if not install_pip():
-        print("Failed to install pip. Please install pip manually.")
+    # Setup virtual environment and pip
+    if not setup_virtual_env():
+        print("Failed to setup virtual environment and pip.")
         return False
 
     # Install Python dependencies
     print("Installing Python dependencies...")
-    if not run_command("pip install -r requirements.txt"):
-        print("Error installing Python dependencies.")
-        return False
+    if system == "linux" and "ubuntu" in platform.platform().lower():
+        if not run_command("source venv/bin/activate && pip install -r requirements.txt"):
+            print("Error installing Python dependencies.")
+            return False
+    else:
+        if not run_command("pip install -r requirements.txt"):
+            print("Error installing Python dependencies.")
+            return False
 
     # Setup Next.js project
     print("Setting up Next.js project...")
@@ -101,7 +123,10 @@ def main():
         print("\nSetup completed successfully!")
         print("\nTo start the application:")
         print("1. Start the LiveKit server")
-        print("2. Run 'python livekit_agent_english.py' in one terminal")
+        if platform.system().lower() == "linux" and "ubuntu" in platform.platform().lower():
+            print("2. Run 'source venv/bin/activate && python livekit_agent_english.py' in one terminal")
+        else:
+            print("2. Run 'python livekit_agent_english.py' in one terminal")
         print("3. Run 'cd aya && npm run dev' in another terminal")
         print("4. Open http://localhost:3000 in your browser")
     else:
