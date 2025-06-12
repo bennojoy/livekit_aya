@@ -120,6 +120,7 @@ def main():
     if install_dependencies():
         print("\nSetup completed successfully!")
         print("\nTo start the application:")
+        print(" update the .env.local file with the correct values")
         print("1. Start the LiveKit server")
         if platform.system().lower() == "linux" and is_ubuntu():
             print("2. Run 'source venv/bin/activate && python livekit_agent_english.py' in one terminal")
