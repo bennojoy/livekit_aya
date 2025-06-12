@@ -19,22 +19,25 @@ def setup_virtual_env():
     system = platform.system().lower()
     
     if system == "linux" and "ubuntu" in platform.platform().lower():
-        # Install python3-venv if not present
-        if not run_command("python3 -m venv --help"):
-            print("Installing python3-venv...")
-            run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full")
+        # First install required system packages
+        print("Installing required system packages...")
+        if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full python3-pip"):
+            print("Failed to install required system packages.")
+            return False
         
         # Create virtual environment
         venv_path = "venv"
         if not os.path.exists(venv_path):
+            print("Creating virtual environment...")
             if not run_command(f"python3 -m venv {venv_path}"):
                 print("Failed to create virtual environment.")
                 return False
         
-        # Activate virtual environment and install pip
+        # Activate virtual environment and upgrade pip
+        print("Setting up virtual environment...")
         activate_script = os.path.join(venv_path, "bin", "activate")
-        if not run_command(f"source {activate_script} && pip install --upgrade pip"):
-            print("Failed to install pip in virtual environment.")
+        if not run_command(f"source {activate_script} && python -m pip install --upgrade pip"):
+            print("Failed to upgrade pip in virtual environment.")
             return False
         
         return True
