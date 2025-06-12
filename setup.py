@@ -82,14 +82,7 @@ def install_dependencies():
     if system == "linux" and is_ubuntu():
         # Use the virtual environment's pip
         venv_pip = os.path.join("venv", "bin", "pip")
-        # First try to install livekit-server-sdk-python separately
-        print("Installing livekit-server-sdk-python...")
-        if not run_command(f"{venv_pip} install livekit-server-sdk-python"):
-            print("Failed to install livekit-server-sdk-python. Trying alternative installation method...")
-            if not run_command(f"{venv_pip} install --index-url https://pypi.org/simple/ livekit-server-sdk-python"):
-                print("Error installing livekit-server-sdk-python.")
-                return False
-        
+   
         # Then install the rest of the requirements
         print("Installing remaining Python dependencies...")
         if not run_command(f"{venv_pip} install -r requirements.txt"):
