@@ -3,7 +3,6 @@ import os
 import platform
 import subprocess
 import sys
-import urllib.request
 
 def run_command(command):
     try:
@@ -21,7 +20,7 @@ def setup_virtual_env():
     if system == "linux" and "ubuntu" in platform.platform().lower():
         # First install required system packages
         print("Installing required system packages...")
-        if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full python3-pip"):
+        if not run_command("sudo apt-get update && sudo apt-get install -y python3-venv python3-full"):
             print("Failed to install required system packages.")
             return False
         
@@ -33,34 +32,10 @@ def setup_virtual_env():
                 print("Failed to create virtual environment.")
                 return False
         
-        # Activate virtual environment and upgrade pip
-        print("Setting up virtual environment...")
-        activate_script = os.path.join(venv_path, "bin", "activate")
-        if not run_command(f"source {activate_script} && python -m pip install --upgrade pip"):
-            print("Failed to upgrade pip in virtual environment.")
-            return False
-        
         return True
     else:
-        # For non-Ubuntu systems, try to install pip directly
-        try:
-            subprocess.run([sys.executable, "-m", "pip", "--version"], check=True)
-            print("pip is already installed.")
-            return True
-        except (subprocess.CalledProcessError, FileNotFoundError):
-            print("pip not found. Installing pip...")
-            try:
-                urllib.request.urlretrieve(
-                    "https://bootstrap.pypa.io/get-pip.py",
-                    "get-pip.py"
-                )
-                subprocess.run([sys.executable, "get-pip.py"], check=True)
-                os.remove("get-pip.py")
-                print("pip installed successfully.")
-                return True
-            except Exception as e:
-                print(f"Failed to install pip: {e}")
-                return False
+        # For non-Ubuntu systems, just return True as we'll use system pip
+        return True
 
 def install_dependencies():
     system = platform.system().lower()
@@ -82,15 +57,17 @@ def install_dependencies():
         print("npm is not installed. Please install Node.js which includes npm.")
         return False
 
-    # Setup virtual environment and pip
+    # Setup virtual environment
     if not setup_virtual_env():
-        print("Failed to setup virtual environment and pip.")
+        print("Failed to setup virtual environment.")
         return False
 
     # Install Python dependencies
     print("Installing Python dependencies...")
     if system == "linux" and "ubuntu" in platform.platform().lower():
-        if not run_command("source venv/bin/activate && pip install -r requirements.txt"):
+        # Use the virtual environment's pip
+        venv_pip = os.path.join("venv", "bin", "pip")
+        if not run_command(f"{venv_pip} install -r requirements.txt"):
             print("Error installing Python dependencies.")
             return False
     else:
