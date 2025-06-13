@@ -7,8 +7,8 @@ const languageMap: { [key: string]: string } = {
   'john': 'en',
   'budi': 'id',
   'sarah': 'en',
-  'aya': 'id',
-  'ben': 'en'
+  'aya': 'en',
+  'ben': 'id'
 };
 
 export async function GET(request: NextRequest) {

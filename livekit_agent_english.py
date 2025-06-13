@@ -17,12 +17,13 @@ from livekit.plugins import (
     openai,
     noise_cancellation,
 )
+from livekit.rtc import RemoteTrackPublication, RemoteParticipant
 
 logger = logging.getLogger("english-translator")
 logger.setLevel(logging.INFO)
 
 # Configuration
-TARGET_PARTICIPANT = "ben"  # Change this to target a different participant
+TARGET_PARTICIPANT = "aya"  # Change this to target a different participant
 
 load_dotenv()
 
@@ -52,7 +53,7 @@ async def entrypoint(ctx: JobContext):
     await room_io.start()
 
     # Initially disable audio input
-    session.input.set_audio_enabled(False)
+    session.input.set_audio_enabled(True)
 
     @session.on("input_speech_started")
     def on_input_speech_started():
@@ -74,31 +75,40 @@ async def entrypoint(ctx: JobContext):
     def on_speech_finished(ev):
         logger.info("Agent finished speaking")
 
-    @ctx.room.on("connection_state_changed")
-    def on_connection_state(state):
-        logger.info(f"Room connection state changed: {state}")
+    await ctx.connect()
+    logger.info("Connected to room")
+
+    @ctx.room.on("track_published")
+    def on_track_published(pub: RemoteTrackPublication, participant: RemoteParticipant):
+        logger.info(f"Track published: {pub.kind} from {participant.identity}")
+        if participant.identity == TARGET_PARTICIPANT:
+            logger.info(f"Found target participant '{TARGET_PARTICIPANT}' publishing track")
+            room_io.set_participant(participant.identity)
+            session.input.set_audio_enabled(True)
+            logger.info(f"Enabling audio input for participant '{TARGET_PARTICIPANT}'")
 
     @ctx.room.on("participant_connected")
     def on_participant_connected(participant):
         logger.info(f"Participant connected: {participant.identity}")
         logger.info(f"Participant metadata: {participant.metadata}")
-        
-        # Only enable audio input for target participant
-        if participant.identity == TARGET_PARTICIPANT:
-            logger.info(f"Enabling audio input for participant '{TARGET_PARTICIPANT}'")
-            room_io.set_participant(TARGET_PARTICIPANT)
-            session.input.set_audio_enabled(True)
-        else:
-            logger.info(f"Ignoring participant {participant.identity}")
 
     @ctx.room.on("track_subscribed")
     def on_track_subscribed(track, publication, participant):
         logger.info(f"Track subscribed: {track.kind} from {participant.identity}")
         logger.info(f"Track source: {publication.source}")
+        if participant.identity == TARGET_PARTICIPANT:
+            logger.info(f"Found target participant '{TARGET_PARTICIPANT}' publishing track")
+            room_io.set_participant(participant.identity)
+            session.input.set_audio_enabled(True)
+            logger.info(f"Enabling audio input for participant '{TARGET_PARTICIPANT}'")
 
     @ctx.room.on("track_unsubscribed")
     def on_track_unsubscribed(track, publication, participant):
         logger.info(f"Track unsubscribed: {track.kind} from {participant.identity}")
+        if participant.identity == TARGET_PARTICIPANT:
+            room_io.unset_participant(participant.identity)
+            session.input.set_audio_enabled(False)
+            logger.info(f"Disabling audio input for participant '{TARGET_PARTICIPANT}'")
 
     await session.start(
         agent=EnglishTranslator(),
@@ -110,11 +120,9 @@ async def entrypoint(ctx: JobContext):
         ),
     )
     logger.info("Agent session started successfully")
-    
-    await ctx.connect()
-    logger.info("Connected to room")
 
 async def handle_request(request: JobRequest) -> None:
+    logger.info(f"Handling request: {request}")
     await request.accept(
         identity="english",
         # this attribute communicates to frontend that we support PTT
