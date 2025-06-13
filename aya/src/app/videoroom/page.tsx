@@ -79,13 +79,23 @@ export default function App() {
         right: 0,
         bottom: 0,
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        justifyContent: 'space-between'
       }}>
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ 
+          flex: 1, 
+          position: 'relative',
+          minHeight: 0,
+          overflow: 'hidden'
+        }}>
           <AyaConference />
         </div>
         <RoomAudioRenderer />
-        <ControlBar />
+        <ControlBar style={{ 
+          flexShrink: 0,
+          height: '60px',
+          zIndex: 10
+        }} />
      </div> 
     </RoomContext.Provider>
   );
