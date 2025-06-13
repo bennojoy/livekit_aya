@@ -10,6 +10,7 @@ from livekit.agents import (
     cli,
     RoomInputOptions,
     RoomOutputOptions,
+    JobRequest,
 )
 from livekit.plugins import (
     openai,
@@ -95,5 +96,15 @@ async def entrypoint(ctx: JobContext):
     await ctx.connect()
     logger.info("Connected to room")
 
+async def handle_request(request: JobRequest) -> None:
+    await request.accept(
+        identity="bahasa",
+        # this attribute communicates to frontend that we support PTT
+        attributes={"bahasa": "1"},
+    )
+
 if __name__ == "__main__":
-    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint))
+    cli.run_app(WorkerOptions(entrypoint_fnc=entrypoint,
+                              request_fnc=handle_request,
+                              agent_name="translator_id"
+                            ))
